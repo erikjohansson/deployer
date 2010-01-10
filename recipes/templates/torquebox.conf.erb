@@ -1,0 +1,5 @@
+start on runlevel [2345]
+stop on runlevel [016]
+
+respawn
+exec su - <%= fetch(:user) %> -c 'torquebox run <%= fetch(:torquebox_run_options) %> >> /home/<%= fetch(:user) %>/log/torquebox.log 2>&1'

@@ -1,0 +1,9 @@
+production:
+  adapter: postgresql
+  encoding: unicode
+  database: <%= fetch(:application) %>
+  host: localhost
+  port: 5432
+  pool: 5
+  username: <%= fetch(:user) %>
+  password: <%= pg_password %>

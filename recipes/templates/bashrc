@@ -1,0 +1,14 @@
+export RAILS_ENV="production"
+export RACK_ENV="production"
+export JRUBY_OPTS=--1.9
+
+if [ -d $HOME/.rbenv ]; then
+  export PATH="$HOME/.rbenv/bin:$PATH"
+  eval "$(rbenv init -)"
+fi
+
+function rbenvsudo(){
+  executable=$1
+  shift 1
+  sudo $(rbenv which $executable) $*
+}
