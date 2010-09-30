@@ -4,8 +4,8 @@ namespace :deploy do
   task :restart do
     system "cap deploy:setup_shared_path"
     system "cap deploy:setup_symlinks"
-    system "cap deploy:gems:install"
-    unless respond_to?(:skip_database) and skip_database
+    system "cap deploy:gems:install" if respond_to?(:enable_custom_bundler) && enable_custom_bundler
+    unless respond_to?(:skip_database) && skip_database
       system "cap deploy:db:create"
       system "cap deploy:db:migrate"
     end

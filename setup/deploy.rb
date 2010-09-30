@@ -69,6 +69,16 @@ set :branch,    "production"      # the branch that should be deployed
 
 ##
 # Optional
+# It is recommended to use `require "bundler/capistrano"` for installing gems
+# However you can comment out the line and enable `:enable_custom_bundler` to run your own `bundle install`
+
+# Caution: please only enable one of the options below!
+# set :enable_custom_bundler, true
+require "bundler/capistrano"
+
+
+##
+# Optional
 # Set options for bundle install
 # Can speed up deployment by skipping the bundle install on test and development gems
 
