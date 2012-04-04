@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=640" />
+
+    <link rel="stylesheet" href="stylesheets/core.css" media="screen"/>
+    <link rel="stylesheet" href="stylesheets/mobile.css" media="handheld, only screen and (max-device-width:640px)"/>
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css"/>
+
+    <script type="text/javascript" src="javascripts/modernizr.js"></script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script type="text/javascript" src="javascripts/headsmart.min.js"></script>
+    <script type="text/javascript">
+      $(document).ready(function () {
+        $('#main_content').headsmart()
+      })
+    </script>
+    <title>Deployer by meskyanichi</title>
+  </head>
+
+  <body>
+    <a id="forkme_banner" href="https://github.com/meskyanichi/deployer">Fork Me on GitHub</a>
+    <div class="shell">
+
+      <header>
+        <span class="ribbon-outer">
+          <span class="ribbon-inner">
+            <h1>Deployer</h1>
+            <h2>An easy-to-use set of Capistrano tasks/recipes for provisioning and deploying Ruby/JRuby applications to your servers.</h2>
+          </span>
+          <span class="left-tail"></span>
+          <span class="right-tail"></span>
+        </span>
+      </header>
+
+      <section id="downloads">
+        <span class="inner">
+          <a href="https://github.com/meskyanichi/deployer/zipball/master" class="zip"><em>download</em> .ZIP</a><a href="https://github.com/meskyanichi/deployer/tarball/master" class="tgz"><em>download</em> .TGZ</a>
+        </span>
+      </section>
+
+      <span class="banner-fix"></span>
+
+      <section id="main_content">
+        <p>Assumptions:</p>
+
+<ul>
+<li>You are using Ubuntu 10.04</li>
+<li>You are able to log in as <code>root</code> via <code>ssh</code>
+</li>
+</ul><h3>Step-by-step preparation</h3>
+
+<p>Follow the step-up-step guide to get the initial preparations done.
+At the end of the process (this section) you'll see a summary of what we've just done.</p>
+
+<p>Log in to your server as the <code>root</code> user:</p>
+
+<pre><code>ssh root@yourip
+</code></pre>
+
+<p>Update the package list and upgrade existing packages:</p>
+
+<pre><code>apt-get -y update &amp;&amp; apt-get -y upgrade
+</code></pre>
+
+<p>Install the UFW Firewall package:</p>
+
+<pre><code>apt-get install ufw
+</code></pre>
+
+<p>Add the <code>deployer</code> user and add it to <code>/etc/sudoers</code>:</p>
+
+<pre><code>adduser deployer
+echo "deployer ALL=(ALL) NOPASSWD: ALL" &gt;&gt; /etc/sudoers
+</code></pre>
+
+<p>Change the SSH port (security measure). Change the <code>SSH_PORT</code> variable to whatever you want to change the port to:</p>
+
+<pre><code>SSH_PORT=22 # CHANGE THIS TO WHATEVER NUMBER YOU WANT
+sed -i "s/Port 22/Port $SSH_PORT/" /etc/ssh/sshd_config
+service ssh reload
+</code></pre>
+
+<p>Configure the firewall (UFW) to allow the <code>$SSH_PORT</code>, <code>80</code> (http) and <code>443</code> (https) ports:</p>
+
+<pre><code>ufw allow $SSH_PORT
+ufw allow 80
+ufw allow 443
+ufw --force enable
+</code></pre>
+
+<p>Finally, lock the <code>root</code> (disabling the password):</p>
+
+<pre><code>passwd -l root
+</code></pre>
+
+<p>From now on, SSH in to your VPS as <code>deployer</code> and <code>sudo su</code> to log in as <code>root</code>.</p>
+
+<pre><code>exit
+</code></pre>
+
+<p>The following has now been accomplished:</p>
+
+<ul>
+<li>Your server's package list has been updated</li>
+<li>Your server's packages have been upgraded to the latest versions</li>
+<li>Your server has been protected with a firewall (UFW) by blocking all ports except <code>$SSH_PORT</code>, <code>80</code> and <code>443</code>
+</li>
+<li>Your server has been protected by disabling direct access to the root user, log in as <code>deployer</code> and <code>sudo su</code> to root</li>
+<li>Your server is now only accessible through <code>$SSH_PORT</code> as the <code>deployer</code> user</li>
+</ul><h3>On your local machine</h3>
+
+<p>Here are two useful commands (depending on your local development OS).</p>
+
+<p>If you're on Linux:</p>
+
+<pre><code>ssh-add
+</code></pre>
+
+<p>If you're on Mac OSX:</p>
+
+<pre><code>ssh-add -K
+</code></pre>
+
+<p>This command will allow you to use Capistrano's <code>agent_forwarding</code> option. It's a VERY convenient when deploying from a remote Git repository. For example if your application resides in a GitHub repository, you would normally have to log in to your server through ssh, run <code>ssh git@github.com</code> to add GitHub to the <code>known_hosts</code>. You would then also need to generate a new ssh key and upload that to GitHub. So, instead of doing all that, agent forwarding will allow you to use your local ssh keys and forward the agent to bypass all of this additional configuration on the server. You only have to run the above command once and it'll work for any deployments in the future.</p>
+
+<h3>Capistrano Configuration</h3>
+
+<p>Capistrano will help in the following ways:</p>
+
+<ul>
+<li>It will provision your server with necessary packages (PostgreSQL, MongoDB, Redis, Nginx, etc)</li>
+<li>It will configure/prepare these packages for use with your application and the OS</li>
+<li>It will deploy your application</li>
+</ul><p>Copy over the <code>deploy.rb</code> file and <code>recipes/</code> folder to your application in the <code>config</code> directory. The recipes in <code>recipes/</code> will be included one by one from the <code>config/deploy.rb</code>. Be sure only to include the recipes you are going to use. Open up <code>config/deploy.rb</code> and remove any recipes from the array of recipes that you're not going to use.</p>
+
+<p>Once done, be sure to review all the tasks briefly in <code>deploy.rb</code> and in all the recipe's files/templates located in <code>config/recipes</code> and <code>config/recipes/templates/</code> to see if anything needs to be tweaked for your deployment purposes. Most of it have common defaults (for Rails, Active Record, Mongoid, etc), and will sometimes "just work" out of the box depending on your app setup. But, these are just basic recipes/templates to get up and running by getting the standard settings/config out of the way. They are meant to be tweaked when necessary.</p>
+
+<p>Assumptions are mostly based on Ruby and JRuby deployments with Puma and TorqueBox, but it should be easy to modify it for anything else like Unicorn and Trinidad. You'd typically define any custom deployment related tasks inside <code>config/deploy.rb</code>. If you're adding a whole "module/recipe" such as another database, search engine or similar utilities, it's best to create a separate recipe in <code>config/recipes</code> for it. Examples of things that go in to <code>deploy.rb</code>:</p>
+
+<ul>
+<li>bundle command with Bundler</li>
+<li>running database migrations for ORM's like Active Record</li>
+<li>asset precompile rake task for asset pipeline with Rails</li>
+<li>app server starts to apply changes (TorqueBox, Puma, etc)</li>
+<li>setting up additional shared folder data for deploy:setup</li>
+<li>setting up additional shared folder symlinks for deploy</li>
+<li>server-related settings such as ip's, roles, ssh port, etc</li>
+</ul><p>Add such tasks to the <code>config/deploy.rb</code>.</p>
+
+<h3>Provisioning, Setup &amp; Deployment</h3>
+
+<p>Once you've fully configured/tweaked/added all your tasks and recipes. You may proceed by provisioning the server with:</p>
+
+<pre><code>cap deploy:install
+</code></pre>
+
+<p>This may take a while depending on the amount of recipes you're using. Once done, all the packages should be installed and ready for use. All "service"-type packages like databases and key value stores come with little Upstart scripts. These scripts are all configured to allow you to start/stop/restart these services using commands like:</p>
+
+<pre><code>sudo [start|stop|restart] postgresql
+sudo [start|stop|restart] mongodb
+sudo [start|stop|restart] redis
+sudo [start|stop|restart] torquebox
+# etc
+</code></pre>
+
+<p>They are also configured to automatically start up when the server boots up, and to automatically restart when a service crashes in order to recover. So basically it'll also act as a "process monitor" like "monit" / "god". It's Ubuntu's initsystem and it's very reliable. Deployer provides a handy set of Capistrano tasks to perform these operations from your local machine. Run <code>cap -T</code> to view all the available tasks.</p>
+
+<p>Now, with everything installed, run the following to bootstrap/configure/setup everything:</p>
+
+<pre><code>cap deploy:setup
+</code></pre>
+
+<p>Such things can be:</p>
+
+<ul>
+<li>Creating a user/database(with password) for PostgreSQL</li>
+<li>Writing a customized <code>.bashrc</code> file to <code>/home/deployer/.bashrc</code>
+</li>
+<li>Writing a customized nginx virtual host file specific to your application to <code>/etc/nginx/sites-enabled</code>
+</li>
+<li>Writing a customized redis configuration file</li>
+</ul><p>This task of course also sets up your <code>/home/deployer/applications/shared/</code> directory (provided by Capistrano itself).</p>
+
+<p>Finally, once everything is in place, go ahead and deploy your application with:</p>
+
+<pre><code>cap deploy
+</code></pre>
+
+<p>This may or may not work. It is often the case that there is either a typo somewhere in any configuration/tweaks you made. Just resolve them and it should work.</p>
+
+<h3>Potential gotchas</h3>
+
+<ul>
+<li>gem install jruby-ssl on deploy before <code>bundle install</code> (this is done for you when the rbenv module installs jruby)</li>
+<li>use same torquebox version in Gemfile as installed on the server, it might conflict</li>
+</ul><h3>Packages (PPA)</h3>
+
+<p>Packages on Ubuntu are generally horribly out-dated. This is why we have <a href="https://launchpad.net/ubuntu/+ppas">PPA</a>'s. Deployer makes use of PPA for various packages, including:</p>
+
+<ul>
+<li>Nginx</li>
+<li>PostgreSQL</li>
+<li>MongoDB</li>
+<li>Redis</li>
+<li>VIM</li>
+</ul><p>This ensures that newer versions (usually the latest) are installed, rather than 6-24 month old versions.</p>
+      </section>
+
+      <footer>
+        <span class="ribbon-outer">
+          <span class="ribbon-inner">
+            <p>this project by <a href="https://github.com/meskyanichi">meskyanichi</a> can be found on <a href="https://github.com/meskyanichi/deployer">GitHub</a></p>
+          </span>
+          <span class="left-tail"></span>
+          <span class="right-tail"></span>
+        </span>
+        <p>Generated with <a href="http://pages.github.com">GitHub Pages</a> using Merlot</p>
+        <span class="octocat"></span>
+      </footer>
+
+    </div>
+
+              <script type="text/javascript">
+            var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+            document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+          </script>
+          <script type="text/javascript">
+            try {
+              var pageTracker = _gat._getTracker("ruby jruby rails capistrano tasks deployment provisioning recipes tasks");
+            pageTracker._trackPageview();
+            } catch(err) {}
+          </script>
+
+  </body>
+</html>
